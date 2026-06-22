@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Driftpaper — generative wallpapers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<header>
+  <span class="mark">Drift<b>paper</b></span>
+  <span class="tag">generative wallpapers, made in your browser</span>
+</header>
+
+<div class="toast" id="toast"></div>
+
+<div class="dock">
+  <div class="row">
+    <div class="tabs" id="tabs" role="tablist">
+      <button class="tab" role="tab" data-style="aurora" aria-selected="true">Aurora</button>
+      <button class="tab" role="tab" data-style="cosmos" aria-selected="false">Cosmos</button>
+      <button class="tab" role="tab" data-style="terrain" aria-selected="false">Terrain</button>
+    </div>
+    <button class="iconbtn" id="shuffle" title="Surprise me">
+      <svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M3 8V3h5"/><path d="M9 9L3 3"/></svg>
+    </button>
+    <button class="iconbtn" id="pause" title="Pause / play motion">
+      <svg viewBox="0 0 24 24"><rect x="7" y="5" width="3.4" height="14" rx="1"/><rect x="13.6" y="5" width="3.4" height="14" rx="1"/></svg>
+    </button>
+  </div>
+
+  <div class="row">
+    <div class="swatches" id="swatches"></div>
+  </div>
+
+  <div class="row">
+    <div class="ctrl"><label>Motion</label><input type="range" id="motion" min="0" max="100" value="50"></div>
+    <div class="ctrl"><label>Detail</label><input type="range" id="detail" min="0" max="100" value="55"></div>
+    <div class="ctrl"><label>Hue</label><input type="range" id="hue" min="0" max="360" value="0"></div>
+  </div>
+
+  <div class="row">
+    <span class="lbl desktop-only">Size</span>
+    <div class="seg" id="aspect">
+      <button data-a="phone" aria-selected="true">Phone</button>
+      <button data-a="desktop" aria-selected="false">Desktop</button>
+      <button data-a="square" aria-selected="false">Square</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="share" title="Copy share link">
+      <svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>
+    </button>
+    <button class="primary" id="download">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      Download
+    </button>
+  </div>
+</div>
+
+<script src="js/scenes.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

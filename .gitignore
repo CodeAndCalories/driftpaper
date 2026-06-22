@@ -1,0 +1,22 @@
+# Secrets / environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Build output / logs (in case I add a bundler later)
+dist/
+build/
+*.log
