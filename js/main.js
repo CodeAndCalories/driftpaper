@@ -8,6 +8,26 @@
    both scripts are in place.
    ============================================================ */
 
+/* ============================ shop / affiliate ============================ */
+// Replace #REPLACE_ME with your affiliate links (e.g. Amazon Associates tag).
+const SHOP_ITEMS = {
+  aurora: [
+    { label:"Aurora Projector", note:"Northern lights at home", url:"#REPLACE_ME", emoji:"🌌" },
+    { label:"Star Projector",   note:"Galaxy on your ceiling",  url:"#REPLACE_ME", emoji:"✨" },
+    { label:"Cozy Throw",       note:"Boreal-night vibes",      url:"#REPLACE_ME", emoji:"🛋️" },
+  ],
+  cosmos: [
+    { label:"Galaxy Projector", note:"Nebula light show",       url:"#REPLACE_ME", emoji:"🌠" },
+    { label:"Telescope",        note:"Stargazing starter",      url:"#REPLACE_ME", emoji:"🔭" },
+    { label:"Space Print",      note:"Framed nebula art",       url:"#REPLACE_ME", emoji:"🪐" },
+  ],
+  terrain: [
+    { label:"Hiking Daypack",   note:"Hit the ridgeline",       url:"#REPLACE_ME", emoji:"🎒" },
+    { label:"Topo Map Print",   note:"Low-poly peaks",          url:"#REPLACE_ME", emoji:"🗺️" },
+    { label:"Camp Lantern",     note:"Golden-hour glow",        url:"#REPLACE_ME", emoji:"🏕️" },
+  ],
+};
+
 /* ============================ state ============================ */
 const state = { style:"aurora", pal:0, motion:50, detail:55, hue:0, aspect:"phone", seed:Math.random()*1000|0, playing:true };
 
@@ -100,12 +120,30 @@ function paintSwatches(){
 }
 function syncSwatchSel(){[...$("#swatches").children].forEach((b,i)=>b.setAttribute('aria-selected',i===state.pal));}
 
+/* ============================ UI: shop strip ============================ */
+/* Rebuilds the affiliate strip for the active style. Reads SHOP_ITEMS (top of file). */
+function renderShop(){
+  const wrap=$("#shop");wrap.innerHTML="";
+  (SHOP_ITEMS[state.style]||[]).forEach(it=>{
+    const a=document.createElement('a');
+    a.className="shop-card";
+    a.href=it.url; a.target="_blank"; a.rel="noopener noreferrer sponsored"; a.title=it.label;
+    const em=document.createElement('span'); em.className="shop-emoji"; em.textContent=it.emoji;
+    const tx=document.createElement('span'); tx.className="shop-text";
+    const lb=document.createElement('span'); lb.className="shop-label"; lb.textContent=it.label;
+    const nt=document.createElement('span'); nt.className="shop-note"; nt.textContent=it.note;
+    tx.appendChild(lb); tx.appendChild(nt);
+    a.appendChild(em); a.appendChild(tx);
+    wrap.appendChild(a);
+  });
+}
+
 /* ============================ UI wiring ============================ */
 $("#tabs").addEventListener('click',e=>{
   const t=e.target.closest('.tab');if(!t)return;
   [...$("#tabs").children].forEach(x=>x.setAttribute('aria-selected',x===t));
   state.style=t.dataset.style;state.pal=0;
-  renderSwatches();applyPalette();applyDetail();pushURL();
+  renderSwatches();renderShop();applyPalette();applyDetail();pushURL();
 });
 function setRangeFill(el){const mn=+el.min||0,mx=+el.max||100;el.style.setProperty('--p',((el.value-mn)/(mx-mn)*100)+'%');}
 $("#motion").addEventListener('input',e=>{state.motion=+e.target.value;setRangeFill(e.target);pushURL();});
@@ -155,5 +193,5 @@ $("#motion").value=state.motion;setRangeFill($("#motion"));
 $("#detail").value=state.detail;setRangeFill($("#detail"));
 $("#hue").value=state.hue;setRangeFill($("#hue"));
 if(!state.playing)$("#pause").innerHTML='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-renderSwatches();applyPalette();applyDetail();resize();
+renderSwatches();renderShop();applyPalette();applyDetail();resize();
 requestAnimationFrame(frame);

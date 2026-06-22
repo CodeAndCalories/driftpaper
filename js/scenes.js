@@ -28,6 +28,12 @@ const PALETTES = {
     {name:"Glacier",sky1:"#08111f", sky2:"#7fc7ff", lo:"#13314f", hi:"#dff3ff"},
     {name:"Verdant",sky1:"#0a1a14", sky2:"#7be0a0", lo:"#10402c", hi:"#dfffe9"},
     {name:"Marsfall",sky1:"#170707", sky2:"#ff7a4d", lo:"#3a160e", hi:"#ffcaa0"},
+  ],
+  silk: [
+    {name:"Pearl",     bg:"#0a0a12", a:"#c8b6ff", b:"#ffc0e0", c:"#bfe3ff", d:"#fff4fb"},
+    {name:"Mercury",   bg:"#06080d", a:"#7f9bb5", b:"#aebfce", c:"#5f7fa8", d:"#eaf2ff"},
+    {name:"Champagne", bg:"#0d0a06", a:"#e7b76a", b:"#c98f4e", c:"#f3d9a3", d:"#fff3da"},
+    {name:"Petrol",    bg:"#04090b", a:"#1fb6a6", b:"#2d7ea8", c:"#6ad6c1", d:"#bdfff0"},
   ]
 };
 
@@ -120,6 +126,35 @@ void main(){
   }
   // vignette
   col*=1.0-0.35*dot(p,p)*0.25;
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+const SILK_FRAG = `
+precision highp float;
+varying vec2 vUv;
+uniform vec2 uRes; uniform float uTime; uniform float uDetail;
+uniform vec3 uBg,uA,uB,uC,uD;
+${SHARED_NOISE}
+void main(){
+  vec2 p=(gl_FragCoord.xy*2.0-uRes)/uRes.y;
+  float t=uTime*0.16;                       // slow satiny drift
+  float warp=0.4+uDetail*0.9;               // Detail = how much the fabric ripples
+  // domain warping: fbm of fbm -> smooth flowing folds
+  vec2 q=vec2(fbm(p*1.1+vec2(0.0,t)),
+              fbm(p*1.1+vec2(5.2,1.3)-t*0.7));
+  vec2 r=vec2(fbm(p*1.25+warp*q+vec2(1.7,9.2)+t*0.5),
+              fbm(p*1.25+warp*q+vec2(8.3,2.8)-t*0.4));
+  float f=fbm(p+warp*r);                    // warped scalar field
+  // base satin gradient woven through the palette
+  float m=0.5+0.5*f;
+  vec3 col=mix(uBg,uA,smoothstep(0.05,0.7,m));
+  col=mix(col,uB,smoothstep(0.4,1.0,m+0.2*r.y));
+  // flowing satin folds + sheen
+  float folds=0.5+0.5*sin((f*3.0+r.x*2.5+t*1.6)*(1.5+uDetail*3.5));
+  folds=pow(folds,1.7);
+  col=mix(col,uC,folds*0.6);
+  col+=uD*pow(folds,4.0)*0.5;               // bright liquid-metal highlight
+  col=pow(col,vec3(0.92));                  // gentle filmic lift
   gl_FragColor=vec4(col,1.0);
 }`;
 
@@ -243,7 +278,7 @@ function applyColors(){
 function applyPalette(){
   applyColors();
   if(state.style!=="terrain"){
-    quadMat.fragmentShader = state.style==="aurora"?AURORA_FRAG:COSMOS_FRAG;
+    quadMat.fragmentShader = state.style==="aurora"?AURORA_FRAG:state.style==="cosmos"?COSMOS_FRAG:SILK_FRAG;
     quadMat.needsUpdate=true;
   }
 }
