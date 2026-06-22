@@ -170,14 +170,37 @@ const quadMat = new THREE.ShaderMaterial({
 });
 quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),quadMat));
 
+/* ---- terrain look & camera tuning — tweak these by eye ---- */
+const TERRAIN = {
+  // camera path (read by the render loop + export in main.js)
+  camFov:48,         // lower = more telephoto / cinematic compression
+  camSpeed:0.10,     // orbit speed — lower = slower, calmer drift (was 0.25)
+  camRadius:12.5,    // distance from centre
+  camHeight:5.2,     // base camera height
+  camBob:0.5,        // vertical drift amount
+  camBobSpeed:0.26,  // vertical drift speed
+  camLookY:0.7,      // height the camera aims at
+  // atmosphere
+  fogDensity:0.055,  // higher = thicker haze, terrain dissolves into the horizon sooner
+  // lights
+  keyColor:0xffe6c2, // warm key (sun) colour
+  keyIntensity:1.35,
+  fillIntensity:0.55,// cool rim/fill from the opposite side (colour follows the sky)
+  hemiIntensity:0.5, // sky/ground ambient
+  ambIntensity:0.14, // flat fill — keep low so facets stay readable
+};
+
 /* ---- terrain scene (real 3D low-poly) ---- */
 const tScene=new THREE.Scene();
-const tCam=new THREE.PerspectiveCamera(55,W/H,0.1,100);
+tScene.fog=new THREE.FogExp2(0x223044,TERRAIN.fogDensity);   // colour set per-palette in buildTerrain
+const tCam=new THREE.PerspectiveCamera(TERRAIN.camFov,W/H,0.1,100);
 const tGroup=new THREE.Group(); tScene.add(tGroup);
 let terrainMesh=null;
-const tLight=new THREE.DirectionalLight(0xffffff,1.15); tLight.position.set(-6,8,4); tScene.add(tLight);
-tScene.add(new THREE.HemisphereLight(0xffffff,0x223044,0.5));
-const tAmb=new THREE.AmbientLight(0xffffff,0.25); tScene.add(tAmb);
+// warm key light + cool rim/fill from the opposite side -> facets catch light and read as 3D
+const tLight=new THREE.DirectionalLight(TERRAIN.keyColor,TERRAIN.keyIntensity); tLight.position.set(-7,6,5); tScene.add(tLight);
+const tFill=new THREE.DirectionalLight(0x88a0c0,TERRAIN.fillIntensity); tFill.position.set(7,3,-6); tScene.add(tFill);
+const tHemi=new THREE.HemisphereLight(0xffffff,0x223044,TERRAIN.hemiIntensity); tScene.add(tHemi);
+const tAmb=new THREE.AmbientLight(0xffffff,TERRAIN.ambIntensity); tScene.add(tAmb);
 
 // value-noise FBM for height
 function vnoise(x,y,seed){
@@ -204,21 +227,24 @@ function buildTerrain(){
     pos.setY(i,h); maxh=Math.max(maxh,h);
   }
   geo.computeVertexNormals();
-  // vertex colours: blend lo->hi by height
+  // vertex colours: blend lo->hi by height, with a faint valley AO for depth
   const lo=new THREE.Color(pal.lo),hi=new THREE.Color(pal.hi);
   const colors=new Float32Array(pos.count*3);
   for(let i=0;i<pos.count;i++){
     const t=Math.min(1,pos.getY(i)/(maxh||1));
     const c=lo.clone().lerp(hi,Math.pow(t,0.9));
+    c.multiplyScalar(0.8+0.2*Math.sqrt(t));     // valleys sit darker -> fake ambient occlusion
     colors[i*3]=c.r;colors[i*3+1]=c.g;colors[i*3+2]=c.b;
   }
   geo.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  const mat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.92,metalness:0.0});
+  const mat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.82,metalness:0.0});
   terrainMesh=new THREE.Mesh(geo,mat); tGroup.add(terrainMesh);
-  // sky gradient via scene background
+  // sky + atmosphere colours per palette (key light stays warm; rim/haze follow the sky)
   const sky1=new THREE.Color(pal.sky1),sky2=new THREE.Color(pal.sky2);
   tScene.background=sky1;
-  tLight.color=sky2.clone().lerp(new THREE.Color(0xffffff),0.4);
+  tScene.fog.color.copy(sky2);                  // distance haze matches the horizon
+  tFill.color.copy(sky2);                        // cool rim/fill picks up the sky colour
+  tHemi.color.copy(sky2); tHemi.groundColor.copy(lo);
   // store for bg gradient draw
   tScene.userData={sky1,sky2};
 }
@@ -229,7 +255,17 @@ const skyMat=new THREE.ShaderMaterial({
   side:THREE.BackSide,
   uniforms:{c1:{value:new THREE.Color()},c2:{value:new THREE.Color()}},
   vertexShader:`varying float vY;void main(){vY=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader:`varying float vY;uniform vec3 c1,c2;void main(){float t=smoothstep(-0.1,0.55,vY);gl_FragColor=vec4(mix(c2,c1,t),1.0);}`
+  fragmentShader:`varying float vY;uniform vec3 c1,c2;
+void main(){
+  float h=clamp(vY,-1.0,1.0);
+  float t=smoothstep(-0.05,0.75,h);
+  vec3 col=mix(c2,c1,t);                 // soft vertical gradient: horizon(c2) -> zenith(c1)
+  float glow=exp(-abs(h)*4.0);           // atmospheric haze band at the horizon
+  col=mix(col,c2,glow*0.4);
+  col+=glow*0.05;
+  col*=1.0-smoothstep(0.45,1.0,h)*0.2;   // deepen the zenith -> depth / soft vignette
+  gl_FragColor=vec4(col,1.0);
+}`
 });
 tScene.add(new THREE.Mesh(skyGeo,skyMat));
 

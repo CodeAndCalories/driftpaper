@@ -58,9 +58,9 @@ function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(state.playing) time += dt*(0.2+state.motion/40);
   if(state.style==="terrain"){
-    const a=time*0.25;
-    tCam.position.set(Math.cos(a)*11, 5.5+Math.sin(time*0.4)*0.6, Math.sin(a)*11);
-    tCam.lookAt(0,0.5,0);
+    const a=time*TERRAIN.camSpeed;
+    tCam.position.set(Math.cos(a)*TERRAIN.camRadius, TERRAIN.camHeight+Math.sin(time*TERRAIN.camBobSpeed)*TERRAIN.camBob, Math.sin(a)*TERRAIN.camRadius);
+    tCam.lookAt(0,TERRAIN.camLookY,0);
     renderer.setClearColor(0x000000,1);
     renderer.render(tScene,tCam);
   } else {
@@ -79,9 +79,9 @@ function exportWallpaper(){
   renderer.setSize(ew,eh,false);
   if(state.style==="terrain"){
     tCam.aspect=ew/eh;tCam.updateProjectionMatrix();
-    const a=time*0.25;
-    tCam.position.set(Math.cos(a)*11,5.5+Math.sin(time*0.4)*0.6,Math.sin(a)*11);
-    tCam.lookAt(0,0.5,0);
+    const a=time*TERRAIN.camSpeed;
+    tCam.position.set(Math.cos(a)*TERRAIN.camRadius,TERRAIN.camHeight+Math.sin(time*TERRAIN.camBobSpeed)*TERRAIN.camBob,Math.sin(a)*TERRAIN.camRadius);
+    tCam.lookAt(0,TERRAIN.camLookY,0);
     renderer.render(tScene,tCam);
   }else{
     quadUniforms.uRes.value.set(ew,eh);
